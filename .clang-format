@@ -10,6 +10,7 @@ AlignConsecutiveDeclarations: true
 AlignTrailingComments: true
 AlwaysBreakTemplateDeclarations: Yes
 BreakBeforeBraces: Attach
+Cpp11BracedListStyle: true
 IncludeCategories:
   - Regex:           'pch\.h'
     Priority:        -2
@@ -25,6 +26,7 @@ IndentCaseLabels: true
 IndentPPDirectives: BeforeHash
 NamespaceIndentation:	All
 SpaceAfterTemplateKeyword: false
+SpaceBeforeCpp11BracedList: false
 SpaceBeforeParens: Never
 SpaceBeforeParensOptions:
   AfterIfMacros: false
