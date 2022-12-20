@@ -24,7 +24,7 @@
 	do {                                                      \
 		std::cerr << __FILE__ ":" DA_STRINGIFY(__LINE__) ": " \
 				  << msg;                                     \
-		std::terminate();                                     \
+		return {};                                            \
 	} while(false)
 
 #define DA_VERIFY(expr)                               \
