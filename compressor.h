@@ -13,6 +13,7 @@ enum class Mode : uint16_t {
 	CompLong,
 };
 
+inline constexpr uint32_t dictStep = 8;
 inline constexpr uint32_t maxRefSize = 1 << 31;
 
 inline constexpr uint32_t maxStride[] = {
@@ -92,10 +93,9 @@ using Map	   = std::unordered_map<uint32_t, DictValue>;
 class Compressor {
 	private:
 	Map		 _dict{};
-	DataIter _refBegin{nullptr};
-	DataIter _refEnd{nullptr};
+	DataIter _refBegin{};
+	DataIter _refEnd{};
 	Mode	 _mode{Mode::Comp};
-	bool	 _dictParsed{false};
 
 	public:
 	Compressor() = default;
@@ -108,16 +108,12 @@ class Compressor {
 		return _mode;
 	}
 
-	constexpr void setReference(DataIter b, DataIter e) noexcept {
-		_refBegin	= b;
-		_refEnd		= e;
-		_dictParsed = false;
-	}
+	constexpr bool setReference(DataIter first, DataIter last) noexcept;
+	constexpr bool compress(DataIter first, DataIter last, Data& out) noexcept;
 
 	static constexpr uint32_t makeToken(Setting setting, int32_t offset, uint32_t stride) noexcept;
-
-	constexpr bool compress() noexcept;
-	constexpr bool genDict() noexcept;
+	static constexpr uint32_t hashRange(DataIter it, uint32_t stride) noexcept;
+	static constexpr uint32_t rehashRange(DataIter it, uint32_t stride, DataIter oldIt, uint32_t oldV) noexcept;
 };
 
 DADIFF_END
