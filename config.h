@@ -9,6 +9,12 @@
 	#define DA_GCC __GNUC__
 #endif
 
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+	#define DA_LITTLE_ENDIAN 1
+#else
+	#define DA_BIG_ENDIAN 1
+#endif
+
 #define DADIFF_BEGIN \
 	namespace da {   \
 		namespace diff {
@@ -40,5 +46,18 @@
 #elif DA_MSVC
 	#define DA_UNREACHABLE() __assume(0)
 #endif
+
+#define DADIFF_VERSION_MAJOR 0
+#define DADIFF_VERSION_MINOR 1
+#define DADIFF_VERSION		 (DADIFF_VERSION_MAJOR * 10 + DADIFF_VERSION_MINOR)
+
+/// DADIFF_MAGIC: ASCII of "DADF" in little endian
+#if DA_LITTLE_ENDIAN
+	#define DADIFF_MAGIC 0x46444144
+#else
+	#define DADIFF_MAGIC 0x44414446
+#endif
+
+#define DADIFF_ESCAPE_CHAR 0x80
 
 #endif // _DADIFF_CONFIG_H_
