@@ -9,10 +9,14 @@
 	#define DA_GCC __GNUC__
 #endif
 
-#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+#ifdef __BYTE_ORDER__
+	#define DA_BIG_ENDIAN	 (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__)
+	#define DA_LITTLE_ENDIAN (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)
+	#define DA_PDP_ENDIAN	 (__BYTE_ORDER__ == __ORDER_PDP_ENDIAN__)
+#else // TODO: Use other method to detect endian instead of assuming little endian
+	#define DA_BIG_ENDIAN	 0
 	#define DA_LITTLE_ENDIAN 1
-#else
-	#define DA_BIG_ENDIAN 1
+	#define DA_PDP_ENDIAN	 0
 #endif
 
 #define DADIFF_BEGIN \
@@ -54,8 +58,10 @@
 /// DADIFF_MAGIC: ASCII of "DADF" in little endian
 #if DA_LITTLE_ENDIAN
 	#define DADIFF_MAGIC 0x46444144
-#else
+#elif DA_BIG_ENDIAN
 	#define DADIFF_MAGIC 0x44414446
+#elif DA_PDP_ENDIAN
+	#define DADIFF_MAGIC 0x41444644
 #endif
 
 #define DADIFF_ESCAPE_CHAR 0x80
