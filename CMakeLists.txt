@@ -8,6 +8,7 @@ set(SRC
 	compressor.cpp
 	compressor.h
 	config.h
+	crc32.h
 	main.cpp
 )
 set(PCH pch.h)
