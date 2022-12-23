@@ -3,6 +3,7 @@
 
 #include "pch.h"
 #include "config.h"
+#include "crc32.h"
 
 DADIFF_BEGIN
 
@@ -13,7 +14,7 @@ enum class Mode : uint16_t {
 	CompLong,
 };
 
-inline constexpr uint32_t dictStep = 8;
+inline constexpr uint32_t dictStep	 = 8;
 inline constexpr uint32_t maxRefSize = 1 << 31;
 
 inline constexpr uint32_t maxStride[] = {
@@ -74,11 +75,11 @@ struct Setting {
 };
 
 struct Header {
-	uint32_t magic = 0x46444144; // ASCII of "DADF" in little endian mode
-	uint32_t size;
-	uint32_t orig_crc;
-	uint32_t ref_crc;
-	Setting	 setting;
+	uint32_t magic;	  // Magic number to identify dadiff file
+	Setting	 setting; // Setting of this file
+	uint32_t size;	  // Original size
+	uint32_t origCrc; // Original CRC32
+	uint32_t refCrc;  // Reference CRC32
 };
 
 struct DictValue {
@@ -87,7 +88,7 @@ struct DictValue {
 };
 
 using Data	   = std::vector<uint8_t>;
-using DataIter = Data::iterator;
+using DataIter = uint8_t*;
 using Map	   = std::unordered_map<uint32_t, DictValue>;
 
 class Compressor {
@@ -95,25 +96,42 @@ class Compressor {
 	Map		 _dict{};
 	DataIter _refBegin{};
 	DataIter _refEnd{};
-	Mode	 _mode{Mode::Comp};
+	Setting	 _setting{Mode::Comp, DADIFF_VERSION, DADIFF_ESCAPE_CHAR};
+
+	public: // Main interface
+	Data compress(DataIter first, DataIter last) noexcept;
 
 	public:
 	Compressor() = default;
 
-	constexpr void setMode(Mode m) noexcept {
-		_mode = m;
+	void setMode(Mode m) noexcept {
+		if(_setting.mode != m) {
+			_setting.mode = m;
+			_dict.clear();
+		}
 	}
 
 	constexpr Mode mode() const noexcept {
-		return _mode;
+		return _setting.mode;
 	}
 
-	constexpr bool setReference(DataIter first, DataIter last) noexcept;
-	constexpr bool compress(DataIter first, DataIter last, Data& out) noexcept;
+	bool setReference(DataIter first, DataIter last) noexcept {
+		// Currently not support reference larger than 2G
+		DA_VERIFY(first < last && (last - first) < maxRefSize);
+		_refBegin = first;
+		_refEnd	  = last;
+		_dict.clear();
+		return true;
+	}
 
-	static constexpr uint32_t makeToken(Setting setting, int32_t offset, uint32_t stride) noexcept;
-	static constexpr uint32_t hashRange(DataIter it, uint32_t stride) noexcept;
-	static constexpr uint32_t rehashRange(DataIter it, uint32_t stride, DataIter oldIt, uint32_t oldV) noexcept;
+
+	static uint32_t makeToken(Setting setting, int32_t offset, uint32_t stride) noexcept;
+	static uint32_t hashRange(DataIter it, uint32_t stride) noexcept;
+	static uint32_t rehashRange(DataIter it, uint32_t stride, DataIter oldIt, uint32_t oldV) noexcept;
+
+	private:
+	bool makeDict() noexcept;
+	Header makeHeader(DataIter first, DataIter last) noexcept;
 };
 
 DADIFF_END
