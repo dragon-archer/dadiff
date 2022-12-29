@@ -30,11 +30,10 @@
 #define DA_STRINGIFY_(x) #x
 #define DA_STRINGIFY(x)	 DA_STRINGIFY_(x)
 
-#define DA_FAIL(msg)                                          \
-	do {                                                      \
-		std::cerr << __FILE__ ":" DA_STRINGIFY(__LINE__) ": " \
-				  << msg;                                     \
-		return {};                                            \
+#define DA_FAIL(msg)                                               \
+	do {                                                           \
+		std::cerr << __FILE__ ":" DA_STRINGIFY(__LINE__) ": " msg; \
+		return {};                                                 \
 	} while(false)
 
 #define DA_VERIFY(expr)                               \
