@@ -21,7 +21,7 @@ inline constexpr uint32_t maxStride[] = {
 	0,	// Mode::Uncomp
 	7,	// Mode::CompShort
 	15, // Mode::Comp
-	16, // Mode::CompLong
+	15, // Mode::CompLong
 };
 
 inline constexpr uint32_t maxOffsetMask[] = {
@@ -29,6 +29,13 @@ inline constexpr uint32_t maxOffsetMask[] = {
 	~uint32_t((1 << 13) - 1), // Mode::CompShort
 	~uint32_t((1 << 20) - 1), // Mode::Comp
 	~uint32_t((1 << 24) - 1), // Mode::CompLong
+};
+
+inline constexpr uint32_t tokenSize[] = {
+	0, // Mode::Uncomp
+	3, // Mode::CompShort
+	4, // Mode::Comp
+	4, // Mode::CompLong
 };
 
 inline constexpr uint32_t strides[] = {
@@ -47,7 +54,6 @@ inline constexpr uint32_t strides[] = {
 	32 << 10,
 	64 << 10,
 	128 << 10,
-	256 << 10,
 };
 
 struct TokenCompShort {
@@ -77,19 +83,14 @@ struct Setting {
 struct Header {
 	uint32_t magic;	  // Magic number to identify dadiff file
 	Setting	 setting; // Setting of this file
-	uint32_t size;	  // Original size
 	uint32_t origCrc; // Original CRC32
 	uint32_t refCrc;  // Reference CRC32
-};
-
-struct DictValue {
-	uint32_t stride : 4;
-	uint32_t offset : 28;
+	uint32_t size;	  // Original size
 };
 
 using Data	   = std::vector<uint8_t>;
 using DataIter = uint8_t*;
-using Map	   = std::unordered_map<uint32_t, DictValue>;
+using Map	   = std::unordered_map<uint32_t, uint32_t>;
 
 class Compressor {
 	private:
@@ -98,21 +99,41 @@ class Compressor {
 	DataIter _refEnd{};
 	Setting	 _setting{Mode::Comp, DADIFF_VERSION, DADIFF_ESCAPE_CHAR};
 
-	public: // Main interface
-	Data compress(DataIter first, DataIter last) noexcept;
-
 	public:
 	Compressor() = default;
 
-	void setMode(Mode m) noexcept {
-		if(_setting.mode != m) {
-			_setting.mode = m;
+	Data compress(DataIter first, DataIter last) noexcept;
+
+	constexpr void setMode(Mode mode) noexcept {
+		if(_setting.mode != mode) {
+			_setting.mode = mode;
 			_dict.clear();
 		}
 	}
 
 	constexpr Mode mode() const noexcept {
 		return _setting.mode;
+	}
+
+	constexpr void setEscape(uint8_t escape) noexcept {
+		_setting.escape = escape;
+	}
+
+	constexpr uint8_t escape() const noexcept {
+		return _setting.escape;
+	}
+
+	constexpr bool setVersion(uint8_t version) noexcept {
+		DA_VERIFY(version <= DADIFF_VERSION);
+		if(_setting.version != version) {
+			_setting.version = version;
+			_dict.clear();
+		}
+		return true;
+	}
+
+	constexpr uint8_t version() const noexcept {
+		return _setting.version;
 	}
 
 	bool setReference(DataIter first, DataIter last) noexcept {
@@ -124,14 +145,18 @@ class Compressor {
 		return true;
 	}
 
-
-	static uint32_t makeToken(Setting setting, int32_t offset, uint32_t stride) noexcept;
-	static uint32_t hashRange(DataIter it, uint32_t stride) noexcept;
-	static uint32_t rehashRange(DataIter it, uint32_t stride, DataIter oldIt, uint32_t oldV) noexcept;
-
 	private:
 	bool makeDict() noexcept;
-	Header makeHeader(DataIter first, DataIter last) noexcept;
+
+	constexpr Header makeHeader(DataIter first, DataIter last) noexcept {
+		Header ret;
+		ret.magic	= DADIFF_MAGIC;
+		ret.setting = _setting;
+		ret.origCrc = crc32(first, last);
+		ret.refCrc	= crc32(_refBegin, _refEnd);
+		ret.size	= last - first;
+		return ret;
+	}
 };
 
 DADIFF_END
